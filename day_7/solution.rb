@@ -1,4 +1,6 @@
-def part_1(input)
+require 'pry'
+
+def solution(input)
   dirs = []
   sizes = Hash.new(0)
 
@@ -23,9 +25,16 @@ def part_1(input)
     end
   end
 
-  sizes.select { |_k,v| v <= 100000 }.values.sum
+  sum = sizes.select { |_k,v| v <= 100000 }.values.sum
+
+  dir_size = Float::INFINITY
+  needed_space = 30000000 - (70000000 - sizes['/'])
+  sizes.each { |dir, size| size >= needed_space ? (dir_size = size if size < dir_size) : nil }
+  dir_size
+
+  { sum: sum, smallest_dir_size_for_deletion: dir_size}
 end
 
-
 input = File.read('day_7/input.txt').split("\n")
-puts part_1(input)
+puts solution(input)[:sum]
+puts solution(input)[:smallest_dir_size_for_deletion]

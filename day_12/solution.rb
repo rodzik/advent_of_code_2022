@@ -1,5 +1,3 @@
-require 'pry'
-
 class Point
   attr_reader :char, :x, :y, :value
 
@@ -20,27 +18,25 @@ class Point
   end
 end
 
-def dijkstra(map, start, finish)
+def dijkstra(map, start, node_condition)
   costs = Hash.new(Float::INFINITY)
   current = start
   costs[current] = 0
-  parents = {}
   visited = []
 
   while !current.nil?
-    possible_nodes(current, map).each do |node|
+    possible_nodes(current, map, node_condition).each do |node|
       new_cost = costs[current] + 1
       next unless new_cost < costs[node]
 
       costs[node] = new_cost
-      parents[node] = current
     end
 
     visited << current
     current = lowest_cost_node(costs, visited)
   end
 
-  costs[finish]
+  costs
 end
 
 def lowest_cost_node(costs, visited)
@@ -48,18 +44,12 @@ def lowest_cost_node(costs, visited)
   unvisited.min_by { |n| costs[n] }
 end
 
-def possible_nodes(node, map)
+def possible_nodes(node, map, node_condition)
   map.select do |p|
     p != node &&
-      node.value + 1 >= p.value &&
+      node_condition.(node, p) &&
       (((node.x - 1..node.x + 1).include?(p.x) && node.y == p.y) || ((node.y - 1..node.y + 1).include?(p.y) && node.x == p.x))
   end
-end
-
-
-def part_1(input)
-  map, start, finish = map_input(input)
-  dijkstra(map, start, finish)
 end
 
 def map_input(input)
@@ -77,5 +67,17 @@ def map_input(input)
   [points.flatten, start, finish]
 end
 
-input = File.read('day_12/input.txt').split("\n")
-puts part_1(input)
+def part_1(input)
+  map, start, finish = map_input(input)
+  costs = dijkstra(map, start, ->(current, checked) { current.value + 1 >= checked.value })
+  costs[finish]
+end
+
+def part_2(input)
+  map, _start, finish = map_input(input)
+  costs = dijkstra(map, finish, ->(current, checked) { current.value <= checked.value + 1 })
+  costs.select {|k, _v| k.value == 0 }.values.min
+end
+
+# input = File.read('day_12/input.txt').split("\n")
+# puts part_1(input)

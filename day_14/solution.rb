@@ -1,11 +1,28 @@
 require 'pry'
 
 class Sand
-  attr_reader :x, :y
+  attr_reader :x, :y, :stop
 
   def initialize(x, y)
     @x = x
     @y = y
+    @stop = false
+  end
+
+  def move(points, floor)
+    while !@stop
+      if y >= floor
+        @stop = true
+      elsif points[[x, y + 1]].nil?
+        down
+      elsif points[[x - 1, y + 1]].nil?
+        left
+      elsif points[[x + 1, y + 1]].nil?
+        right
+      else
+        @stop = true
+      end
+    end
   end
 
   def down
@@ -20,6 +37,11 @@ class Sand
   def right
     @x += 1
     @y += 1
+  end
+
+  def [](arg)
+    return x if arg == 0
+    y
   end
 
   def xy
@@ -43,51 +65,46 @@ class Cave
 
   def add_rock(p)
     @points[p] = 'rock'
-    @max_x = p[0] if p[0] > @max_x
-    @min_x = p[0] if p[0] < @min_x
+    update_maxes(p)
     @max_y = p[1] if p[1] > @max_y
   end
 
-  def add_sand
+  def add_sand(allow_drawing)
     while !overflown
       sand = Sand.new(*@sand_entry)
-      drop_sand(sand)
-
-      @points[sand.xy] = 'sand' unless overflown
-      @grains += 1 unless overflown
-      # draw
+      while !sand.stop
+        sand.move(@points, floor)
+      end
+      @overflown = true if sand.xy == [500, 0]
+      update_maxes(sand)
+      @points[sand.xy] = 'sand'
+      @grains += 1
+      draw if allow_drawing
     end
   end
 
   private
 
+  def update_maxes(p)
+    @max_x = p[0] if p[0] > @max_x
+    @min_x = p[0] if p[0] < @min_x
+  end
+
   def draw
-    sleep(0.1)
+    sleep(0.05)
     system("clear")
     lines = ['']
-    (min_y..max_y + 2).each do |y|
+    (min_y..floor).each do |y|
       line = []
       (min_x - 2..max_x + 2).each { |x| line << symbol([x, y]) }
-      lines << line.join(' ')
+      lines << line.join('')
     end
-    lines << ''
+    lines << '#' * (max_x - min_x + 5)
     puts lines
   end
 
-  def drop_sand(s)
-    while @points[[s.x, s.y + 1]].nil? && !overflown
-      s.down
-      @overflown = true if s.y > max_y
-    end
-    return if overflown
-
-    if @points[[s.x - 1, s.y + 1]].nil?
-      s.left
-      drop_sand(s)
-    elsif @points[[s.x + 1, s.y + 1]].nil?
-      s.right
-      drop_sand(s)
-    end
+  def floor
+    @max_y + 1
   end
 
   def symbol(xy)
@@ -117,12 +134,12 @@ def add_blockers(input, cave)
   end
 end
 
-def part_1(input, sand_entry, draw)
+def part_2(input, sand_entry, draw = false)
   cave = Cave.new(sand_entry)
   add_blockers(input, cave)
   cave.add_sand(draw)
   cave.grains
 end
 
-input = File.read('day_14/input.txt').split("\n")
-puts part_1(input, [500, 0], false)
+# input = File.read('day_14/input.txt').split("\n")
+# puts part_2(input, [500, 0])

@@ -15,7 +15,6 @@ class Sensor
   end
 
   def affects_point?(p)
-    return false if p == beacon
     return false unless affects_line?(p[1])
 
     range(p[1]).include?(p[0])
@@ -46,22 +45,24 @@ class Sensor
     y + r
   end
 end
-
-def part_1(input, line)
-  sensors = []
-  max_x = -Float::INFINITY
-  min_x = Float::INFINITY
-  max_y = -Float::INFINITY
-  min_y = Float::INFINITY
-
-  input.each do |line|
+def setup_sensors(input)
+  input.map do |line|
     arr = line.split('=')
     x = arr[1].to_i
     y = arr[2].to_i
     bx = arr[3].to_i
     by = arr[4].to_i
-    sensors << Sensor.new(x, y, bx, by)
+    Sensor.new(x, y, bx, by)
   end
+end
+
+def part_1(input, line)
+  sensors = setup_sensors(input)
+
+  max_x = -Float::INFINITY
+  min_x = Float::INFINITY
+  max_y = -Float::INFINITY
+  min_y = Float::INFINITY
 
   sensors.each do |s|
     max_x = s.max_x if s.max_x > max_x
@@ -89,5 +90,35 @@ def part_1(input, line)
   taken
 end
 
+def part_2(input, boundary)
+  sensors = setup_sensors(input)
+  distress_beacon = nil
+
+  y = 0
+  while y < boundary && !distress_beacon
+    x = 0
+    while x < boundary && !distress_beacon
+      puts "#{y}, #{x}"
+      affecting = sensors.select { |s| s.affects_point?([x, y]) }
+
+      if affecting == []
+        distress_beacon = [x, y]
+        break
+      end
+
+      affecting.each do |s|
+        x = s.range(y).max if s.range(y).max > x
+      end
+
+      x += 1
+    end
+
+    y += 1
+  end
+
+  distress_beacon[0] * 4000000 + distress_beacon[1]
+end
+
 input = File.read('day_15/input.txt').split("\n")
-puts part_1(input, 2000000)
+# puts part_1(input, 2000000)
+# puts part_2(input, 4000000)
